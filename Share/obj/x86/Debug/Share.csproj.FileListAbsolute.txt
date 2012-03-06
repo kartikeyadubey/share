@@ -1,0 +1,15 @@
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\Share.exe
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\Share.pdb
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\OpenNI.Net.dll
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\XnVNITE.net.dll
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\MainWindow.baml
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\MainWindow.g.cs
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\App.g.cs
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\Share_MarkupCompile.cache
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\Share.g.resources
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\Share.Properties.Resources.resources
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\GenerateResource.read.1.tlog
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\GenerateResource.write.1.tlog
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\Share.exe
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\Share.pdb
