@@ -66,6 +66,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Client.cs" />
+    <Compile Include="Compressor.cs" />
     <Compile Include="HandTracker.cs" />
     <Compile Include="MyBox.cs" />
     <Compile Include="HandData.cs" />

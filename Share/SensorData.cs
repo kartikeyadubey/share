@@ -74,13 +74,18 @@ namespace Share
         private string calibPose;
         private Dictionary<int, Dictionary<SkeletonJoint, SkeletonJointPosition>> joints;
 
-        private byte[] backgroundImage;
+        public byte[] backgroundImage;
         private bool backgroundDrawn = false;
 
         private NITE.SessionManager sessionManager;
         public bool playerRecognized = false;
 
         private bool clientConnected = false;
+        private int xStart = int.MaxValue;
+        private int yStart = int.MaxValue;
+        private int xEnd = int.MinValue;
+        private int yEnd = int.MinValue;
+        private byte[] playerImage;
         #endregion
 
 
@@ -88,7 +93,7 @@ namespace Share
         public delegate void UpdatedEventHandler(object sender, Point3D handPoint);
         public event UpdatedEventHandler updated;
 
-        public delegate void SendImageHandler(object sender, WriteableBitmap b);
+        public delegate void SendImageHandler(object sender, WriteableBitmap b, bool playerFound, int xS, int xE, int yS, int yE);
         public event SendImageHandler imageUpdate;
         #endregion
 
@@ -114,7 +119,7 @@ namespace Share
                     }
                     unsafe
                     {
-
+                        resetBoundingBox();
                         RGB24Pixel* pImage = (RGB24Pixel*)this.ImageGenerator.ImageMapPtr.ToPointer();
                         ushort* pLabels = (ushort*)this.userGenerator.GetUserPixels(0).LabelMapPtr.ToPointer();
                         //Keep track of backgroundImage array
@@ -143,6 +148,7 @@ namespace Share
 
                         int playerImageCounter = 0;
                         playerRecognized = false;
+
                         for (int y = 0; y < _imageMD.YRes; ++y)
                         {
                             byte* pDest = (byte*)_imageBitmap.BackBuffer.ToPointer() + y * _imageBitmap.BackBufferStride;
@@ -159,26 +165,85 @@ namespace Share
                                     pDest[2] = pImage->Red;
                                     pDest[3] = 255;
                                     playerRecognized = true;
+
+
+                                    //Calculate bounding box
+                                    if (xStart > x)
+                                    {
+                                        xStart = x;
+                                    }
+                                    if (yStart > y)
+                                    {
+                                        yStart = y;
+                                    }
+                                    if (xEnd < x)
+                                    {
+                                        xEnd = x;
+                                    }
+                                    if (yEnd < y)
+                                    {
+                                        yEnd = y;
+                                    }
+
                                 }
-                                //User detected depth greater than 2000mm black out user
-                                else if (*pLabels > 0)
+                                //User detected depth lesser than 3000mm grey out user
+                                else if (*pLabels > 0 && *pLabels < 3000)
                                 {
                                     pDest[0] = pImage->Blue;
                                     pDest[1] = pImage->Green;
                                     pDest[2] = pImage->Red;
                                     pDest[3] = 100;
+                                    playerRecognized = true;
+
+                                    //Calculate Bounding box
+                                    if (xStart > x)
+                                    {
+                                        xStart = x;
+                                    }
+                                    if (yStart > y)
+                                    {
+                                        yStart = y;
+                                    }
+                                    if (xEnd < x)
+                                    {
+                                        xEnd = x;
+                                    }
+                                    if (yEnd < y)
+                                    {
+                                        yEnd = y;
+                                    }
                                 }
                             }
                         }
 
                     }
-                    
+
                     _imageBitmap.AddDirtyRect(new Int32Rect(0, 0, _imageMD.XRes, _imageMD.YRes));
+                
                     _imageBitmap.Unlock();
                 }
-                imageUpdate(this, _imageBitmap);
+
+                if (playerRecognized)
+                {
+                    imageUpdate(this, _imageBitmap, true, xStart, xEnd, yStart, yEnd);
+                }
+                else
+                {
+                    imageUpdate(this, _imageBitmap, false, xStart, xEnd, yStart, yEnd);
+                }
+                
                 return _imageBitmap;
             }
+        }
+
+        //Reset the bounding box information
+        //so that it can be calculated correctly
+        private void resetBoundingBox()
+        {
+            xStart = int.MaxValue;
+            yStart = int.MaxValue;
+            xEnd = int.MinValue;
+            yEnd = int.MinValue;
         }
 
         //Store the background image information

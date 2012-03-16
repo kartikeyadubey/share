@@ -15,6 +15,8 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.IO;
+using System.IO.Compression;
 
 namespace Share
 {
@@ -31,11 +33,13 @@ namespace Share
         readonly int IMAGE_WIDTH;
         readonly int IMAGE_HEIGHT;
         readonly int IMAGE_SIZE;
-        int port = 3001;
+        int port = 3000;
         bool test = false;
         bool imageSent = false;
         Socket s;
         bool clientConnected = false;
+        bool backgroundSent = false;
+        WriteableBitmap clientImage;
 
         public MainWindow()
         {
@@ -55,21 +59,73 @@ namespace Share
 
             _worker.DoWork += new DoWorkEventHandler(Worker_DoWork);
             _serverThread.DoWork +=new DoWorkEventHandler(_serverThread_DoWork);
+            clientImage = new WriteableBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, 96, 96, PixelFormats.Bgra32, null);
         }
 
-        void _sensor_imageUpdate(object sender, WriteableBitmap b)
+        void _sensor_imageUpdate(object sender, WriteableBitmap b, bool playerFound, int xStart, int xEnd, int yStart, int yEnd)
         {
-            if (clientConnected)
+            if (!clientConnected)
             {
-                imageSent = true;
-                byte[] result = new byte[IMAGE_SIZE]; // ARGB
-                b.Lock();
-                Marshal.Copy(b.BackBuffer, result, 0, IMAGE_SIZE);
-                b.Unlock();
-                s.Send(result);
-                Console.WriteLine("Server sent image data");
+                return;
+            }
+            else
+            {
+                //Background has been sent and there is a player
+                //in the image send a message to the client
+                //with the size of the bounding box and the image
+                if (backgroundSent && playerFound)
+                {
+                    //Send the client a flag
+                    ASCIIEncoding encoder = new ASCIIEncoding();
+                    byte[] buffer = encoder.GetBytes("playerimage");
+
+
+                    int imageSize = ((xEnd - xStart) * (yEnd - yStart) * 4);
+                    byte[] playerImage = new byte[(imageSize)];
+
+                    b.CopyPixels(new Int32Rect(xStart, yStart, (xEnd - xStart), (yEnd - yStart)), playerImage, ((xEnd - xStart) * 4), 0);
+
+
+                    s.Send(buffer);
+
+                    //Send the actual size of the bounding box
+                    byte[] xS = BitConverter.GetBytes(xStart);
+                    byte[] xE = BitConverter.GetBytes(xEnd);
+                    byte[] yS = BitConverter.GetBytes(yStart);
+                    byte[] yE = BitConverter.GetBytes(yEnd);
+                    byte[] playerImageSize = BitConverter.GetBytes(playerImage.Length);
+
+                    s.Send(xS);
+
+                    s.Send(xE);
+
+                    s.Send(yS);
+
+                    s.Send(yE);
+
+                    s.Send(playerImageSize);
+                    imageSent = true;
+                    //byte[] result = new byte[IMAGE_SIZE]; // ARGB
+                    //b.Lock();
+                    //Marshal.Copy(b.BackBuffer, result, 0, IMAGE_SIZE);
+                    //b.Unlock();
+                    //////byte[] compressed = Compressor.Compress(result);
+                    //s.Send(result);
+
+                    s.Send(playerImage);
+                    //Console.WriteLine("Server sent data, orig data size: " + playerImage.Length + "playerImage length: " + playerImage.Length);
+                }
+                else if(!backgroundSent)
+                {
+                    s.Send(_sensor.backgroundImage);
+                    backgroundSent = true;
+                    Console.WriteLine("Background sent");
+                }
+                
             }
         }
+
+
 
         void _serverThread_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -85,14 +141,19 @@ namespace Share
                     Console.WriteLine("Waiting for connections...");
                     while (!clientConnected)
                     {
-                        clientConnected = true;
+                        
                         s = listener.AcceptSocket();
                         Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                         byte[] b = new byte[65535];
                         int k = s.Receive(b);
                         Console.WriteLine("Received:");
                         ASCIIEncoding enc = new ASCIIEncoding();
-                        Console.WriteLine(enc.GetString(b, 0, k));
+                        //Ensure the client is who we want
+                        if (enc.GetString(b, 0, k) == "hello")
+                        {
+                            clientConnected = true;
+                            Console.WriteLine(enc.GetString(b, 0, k));
+                        }
                     }
                 });
             }
