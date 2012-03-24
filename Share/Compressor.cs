@@ -4,11 +4,18 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.IO.Compression;
+using System.Windows.Media.Imaging;
+using System.Windows;
+using System.Windows.Media;
+using System.Runtime.InteropServices;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace Share
 {
     class Compressor
     {
+
         public static byte[] Compress(byte[] buffer)
         {
             MemoryStream ms = new MemoryStream();
@@ -42,5 +49,9 @@ namespace Share
 
             return buffer;
         }
+
+
+        
+
     }
 }

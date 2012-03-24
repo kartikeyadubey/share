@@ -21,7 +21,7 @@ namespace Share
         /// <summary>
         /// Default configuration file path.
         /// </summary>
-        private const string CONFIGURATION = @"../../../Data/SamplesConfig.xml";
+        private const string CONFIGURATION = @"../../../../Data/LowResConfig.xml";
 
         /// <summary>
         /// Horizontal bitmap dpi.
@@ -231,7 +231,7 @@ namespace Share
                 {
                     imageUpdate(this, _imageBitmap, false, xStart, xEnd, yStart, yEnd);
                 }
-                
+
                 return _imageBitmap;
             }
         }
@@ -339,7 +339,6 @@ namespace Share
 
         public bool drawBackground = true;
         private NITE.FlowRouter flowRouter;
-        private HandData handCanvas;
         private MyBox boxes;
         #endregion
         #endregion
@@ -371,7 +370,6 @@ namespace Share
             this.boxes.Update += new MyBox.UpdateHandler(boxes_Update);
             this.sessionManager.AddListener(this.flowRouter);
             this.sessionManager.SessionStart += new EventHandler<NITE.PositionEventArgs>(sessionManager_SessionStart);
-            //this.handCanvas = new MyCanvas();
             Console.WriteLine("Initialized Sensor Data");
 
             this.DepthGenerator.AlternativeViewpointCapability.SetViewpoint(this.ImageGenerator);
@@ -418,7 +416,7 @@ namespace Share
         {
             try
             {
-                this.Context = Context.CreateFromXmlFile(@"../../../../Data/SamplesConfig.xml", out scriptNode);
+                this.Context = Context.CreateFromXmlFile(configuration, out scriptNode);
                 this.sessionManager = new NITE.SessionManager(this.Context, "Wave", "RaiseHand");
             }
             catch
@@ -438,10 +436,10 @@ namespace Share
         private void InitializeBitmaps()
         {
             MapOutputMode mapMode = this.ImageGenerator.MapOutputMode;
-
             int width = (int)mapMode.XRes;
             int height = (int)mapMode.YRes;
 
+            Console.WriteLine("Res: " + width + ":" + height);
             _imageBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Bgra32, null);
             _depthBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
         }

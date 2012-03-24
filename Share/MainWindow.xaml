@@ -5,6 +5,6 @@
     <Grid>
         <Image Height="480" HorizontalAlignment="Left" Margin="12,12,0,0" Name="image1" Stretch="Fill" VerticalAlignment="Top" Width="640" />
         <Canvas Height="525" HorizontalAlignment="Left" Margin="12,36,0,0" Name="canvas1" VerticalAlignment="Top" Width="640"></Canvas>
-        <Image Height="480" Name="image2" Stretch="Fill" Width="640" Margin="670,12,12,69" />
+        <Image Height="240" Name="image2" Stretch="Fill" Width="320" Margin="670,12,12,69" />
     </Grid>
 </Window>

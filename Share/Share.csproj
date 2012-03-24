@@ -43,6 +43,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -71,9 +72,11 @@
     <Compile Include="MyBox.cs" />
     <Compile Include="HandData.cs" />
     <Compile Include="NuiPositionEventArgs.cs" />
+    <Compile Include="RewritableBitmap.cs" />
     <Compile Include="SensorData.cs" />
     <Compile Include="SimpleServer.cs" />
     <Compile Include="TcpServer.cs" />
+    <Compile Include="WriteableBitmapTransformationExtensions.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

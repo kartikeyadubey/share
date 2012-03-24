@@ -17,6 +17,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 
 namespace Share
 {
@@ -30,9 +31,9 @@ namespace Share
         SensorData _sensor;
         TextBlock greeting;
         bool isGreeting = false;
-        readonly int IMAGE_WIDTH;
-        readonly int IMAGE_HEIGHT;
-        readonly int IMAGE_SIZE;
+        private const int IMAGE_WIDTH = 640;
+        private const int IMAGE_HEIGHT = 480;
+        private const int IMAGE_SIZE = 640*480*4;
         int port = 3000;
         bool test = false;
         bool imageSent = false;
@@ -40,6 +41,7 @@ namespace Share
         bool clientConnected = false;
         bool backgroundSent = false;
         WriteableBitmap clientImage;
+        int imageSendCounter;
 
         public MainWindow()
         {
@@ -47,19 +49,17 @@ namespace Share
             WindowState = System.Windows.WindowState.Maximized;
             greeting = new TextBlock();
 
-            Console.WriteLine("Create Sensor Data");
             _sensor = new SensorData();
             _sensor.updated += new SensorData.UpdatedEventHandler(_sensor_updated);
             _sensor.imageUpdate += new SensorData.SendImageHandler(_sensor_imageUpdate);
-            IMAGE_HEIGHT = 480;
-            IMAGE_WIDTH = 640;
-            IMAGE_SIZE = IMAGE_WIDTH * IMAGE_HEIGHT * 4;
+
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
             Closing += new System.ComponentModel.CancelEventHandler(MainWindow_Closing);
 
             _worker.DoWork += new DoWorkEventHandler(Worker_DoWork);
             _serverThread.DoWork +=new DoWorkEventHandler(_serverThread_DoWork);
-            clientImage = new WriteableBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, 96, 96, PixelFormats.Bgra32, null);
+            //clientImage = new WriteableBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, 96, 96, PixelFormats.Bgra32, null);
+            imageSendCounter = 1;
         }
 
         void _sensor_imageUpdate(object sender, WriteableBitmap b, bool playerFound, int xStart, int xEnd, int yStart, int yEnd)
@@ -73,20 +73,48 @@ namespace Share
                 //Background has been sent and there is a player
                 //in the image send a message to the client
                 //with the size of the bounding box and the image
-                if (backgroundSent && playerFound)
+                //Send every sixth frame that we receive
+                if (backgroundSent && playerFound && imageSendCounter%2 == 0)
                 {
                     //Send the client a flag
                     ASCIIEncoding encoder = new ASCIIEncoding();
                     byte[] buffer = encoder.GetBytes("playerimage");
 
+                    byte[] completeMessage = new byte[65536];
+                    int k = s.Receive(completeMessage);
+                    while (k == 0)
+                    {
+                        k = s.Receive(completeMessage);
+                    }
+                    Console.WriteLine("Message received: " + encoder.GetString(completeMessage, 0, k));
 
-                    int imageSize = ((xEnd - xStart) * (yEnd - yStart) * 4);
-                    byte[] playerImage = new byte[(imageSize)];
 
-                    b.CopyPixels(new Int32Rect(xStart, yStart, (xEnd - xStart), (yEnd - yStart)), playerImage, ((xEnd - xStart) * 4), 0);
+                    //int imageSize = ((xEnd - xStart) * (yEnd - yStart) * 4);
+                    //byte[] playerImage = new byte[(imageSize)];
+                    clientImage = b.Resize(320, 240, RewritableBitmap.Interpolation.Bilinear);
+                    double tmpXStart = (xStart / 2);
+                    double tmpYStart = (yStart / 2);
+                    double tmpXEnd = (xEnd / 2);
+                    double tmpYEnd = (yEnd / 2);
+
+                    xStart = Convert.ToInt32(Math.Floor(tmpXStart));
+                    xEnd = Convert.ToInt32(Math.Floor(tmpXEnd));
+                    yStart = Convert.ToInt32(Math.Floor(tmpYStart));
+                    yEnd = Convert.ToInt32(Math.Floor(tmpYEnd));
 
 
-                    s.Send(buffer);
+                    int smallWidth = (xEnd - xStart);
+                    int smallHeight = (yEnd - yStart);
+
+
+                    int imgSize = smallWidth * smallHeight* 4;
+                    Console.WriteLine("Image size: " + imgSize);
+                    byte[] playerImage = new byte[imgSize];
+
+
+                    clientImage.CopyPixels(new Int32Rect(xStart, yStart, smallWidth, smallHeight), playerImage, (smallWidth * 4), 0);
+                    //b.CopyPixels(new Int32Rect(xStart, yStart, (xEnd - xStart), (yEnd - yStart)), playerImage, ((xEnd - xStart) * 4), 0);
+
 
                     //Send the actual size of the bounding box
                     byte[] xS = BitConverter.GetBytes(xStart);
@@ -94,6 +122,23 @@ namespace Share
                     byte[] yS = BitConverter.GetBytes(yStart);
                     byte[] yE = BitConverter.GetBytes(yEnd);
                     byte[] playerImageSize = BitConverter.GetBytes(playerImage.Length);
+
+                    //Image is too big don't try to send the data
+                    if (encoder.GetString(completeMessage, 0 , k) != "rcomplete")
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        //Console.WriteLine("Status of socket: " + s.Blocking);
+                        s.Send(buffer);
+                        
+                    }
+                    catch (SocketException e)
+                    {
+                        Console.WriteLine("Error: " + e.ToString());
+                    }
 
                     s.Send(xS);
 
@@ -103,8 +148,10 @@ namespace Share
 
                     s.Send(yE);
 
+                    //WORKING UNCOMMENT AFTER TESTING COMPRESSION
                     s.Send(playerImageSize);
                     imageSent = true;
+                    imageSendCounter = 1;
                     //byte[] result = new byte[IMAGE_SIZE]; // ARGB
                     //b.Lock();
                     //Marshal.Copy(b.BackBuffer, result, 0, IMAGE_SIZE);
@@ -113,13 +160,22 @@ namespace Share
                     //s.Send(result);
 
                     s.Send(playerImage);
-                    //Console.WriteLine("Server sent data, orig data size: " + playerImage.Length + "playerImage length: " + playerImage.Length);
+                    Console.WriteLine("Image sent, size of image: " + playerImage.Length + "," + xStart + ", " + xEnd + ", " + yStart + ", " + yEnd);
                 }
-                else if(!backgroundSent)
+                else if (!backgroundSent)
                 {
-                    s.Send(_sensor.backgroundImage);
+                    clientImage = b.Resize(320, 240, RewritableBitmap.Interpolation.Bilinear);
+                    byte[] smallBackgroundImage = new byte[IMAGE_SIZE/4];
+                    clientImage.CopyPixels(new Int32Rect(0, 0, 320, 240), smallBackgroundImage, 320*4, 0);
+                    s.Send(smallBackgroundImage);
+                    //s.Send(_sensor.backgroundImage);
                     backgroundSent = true;
                     Console.WriteLine("Background sent");
+                }
+                else
+                {
+                    imageSendCounter++;
+                    Console.WriteLine("Image not sent");
                 }
                 
             }
@@ -131,8 +187,8 @@ namespace Share
         {
             if (!clientConnected)
             {
-                Dispatcher.BeginInvoke((Action)delegate
-                {
+                //Dispatcher.BeginInvoke((Action)delegate
+                //{
                     IPAddress ipAddress = IPAddress.Any;
                     TcpListener listener = new TcpListener(ipAddress, port);
                     listener.Start();
@@ -141,8 +197,9 @@ namespace Share
                     Console.WriteLine("Waiting for connections...");
                     while (!clientConnected)
                     {
-                        
                         s = listener.AcceptSocket();
+                        s.SendBufferSize = 256000;
+                        //s.NoDelay = true;
                         Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                         byte[] b = new byte[65535];
                         int k = s.Receive(b);
@@ -155,7 +212,7 @@ namespace Share
                             Console.WriteLine(enc.GetString(b, 0, k));
                         }
                     }
-                });
+                //});
             }
         }
 
