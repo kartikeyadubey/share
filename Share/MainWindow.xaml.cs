@@ -35,7 +35,7 @@ namespace Share
         #region Constants
         private const int IMAGE_WIDTH = 640;
         private const int IMAGE_HEIGHT = 480;
-        private const int IMAGE_SIZE = 640*480*4;
+        private const int IMAGE_SIZE = 640 * 480 * 4;
         private const int portSend = 3000;
         private const int portReceive = 4000;
         private const int DPI_X = 96;
@@ -97,7 +97,7 @@ namespace Share
             _worker.DoWork += new DoWorkEventHandler(Worker_DoWork);
 
             _serverThread = new BackgroundWorker();
-            _serverThread.DoWork +=new DoWorkEventHandler(_serverThread_DoWork);
+            _serverThread.DoWork += new DoWorkEventHandler(_serverThread_DoWork);
 
             _clientThread = new BackgroundWorker();
             _clientThread.DoWork += new DoWorkEventHandler(_clientThread_DoWork);
@@ -117,6 +117,7 @@ namespace Share
                 client = new TcpClient();
                 serverEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), portReceive);
 
+                System.Threading.Thread.Sleep(3000);
                 client.Connect(serverEndPoint);
                 clientStream = client.GetStream();
 
@@ -128,7 +129,7 @@ namespace Share
                 clientStream.Flush();
                 connectedToServer = true;
             }
-            else if(connectedToServer)
+            else if (connectedToServer)
             {
                 byte[] backgroundImageData = new byte[TRANSMIT_IMAGE_SIZE];
                 byte[] serverMessage = new byte[65535];
@@ -218,7 +219,7 @@ namespace Share
                         }
 
                         drawPlayer();
-                        
+
                         clientStream.Write(COMPLETE_MESSAGE, 0, COMPLETE_MESSAGE.Length);
                         clientStream.Flush();
                         //Console.WriteLine("Image received, size of image: " + imgSize + "," + xStart + ", " + xEnd + ", " + yStart + ", " + yEnd);
@@ -288,7 +289,7 @@ namespace Share
                 //in the image send a message to the client
                 //with the size of the bounding box and the image
                 //Send every sixth frame that we receive
-                if (backgroundSent && playerFound && imageSendCounter%2 == 0)
+                if (backgroundSent && playerFound)
                 {
                     //Send the client a flag
                     ASCIIEncoding encoder = new ASCIIEncoding();
@@ -298,7 +299,7 @@ namespace Share
                     clientStream.Write(readyToReceive, 0, readyToReceive.Length);
                     clientStream.Flush();
                     byte[] completeMessage = new byte[65536];
-                    
+
                     int k = s.Receive(completeMessage);
                     while (k == 0)
                     {
@@ -312,7 +313,7 @@ namespace Share
                         Console.WriteLine("Message received: " + encoder.GetString(completeMessage, 0, k));
                         return;
                     }
-                    
+
                     clientImage = b.Resize(320, 240, RewritableBitmap.Interpolation.Bilinear);
                     double tmpXStart = (xStart / 2);
                     double tmpYStart = (yStart / 2);
@@ -329,7 +330,7 @@ namespace Share
                     int smallHeight = (yEnd - yStart);
 
 
-                    int imgSize = smallWidth * smallHeight* 4;
+                    int imgSize = smallWidth * smallHeight * 4;
                     //Console.WriteLine("Image size: " + imgSize);
                     byte[] transmitPlayerImage = new byte[imgSize];
 
@@ -350,7 +351,7 @@ namespace Share
                     {
                         //Console.WriteLine("Status of socket: " + s.Blocking);
                         s.Send(buffer);
-                        
+
                     }
                     catch (SocketException e)
                     {
@@ -374,7 +375,7 @@ namespace Share
                 {
                     clientImage = b.Resize(320, 240, RewritableBitmap.Interpolation.Bilinear);
                     byte[] smallBackgroundImage = new byte[TRANSMIT_IMAGE_SIZE];
-                    clientImage.CopyPixels(new Int32Rect(0, 0, 320, 240), smallBackgroundImage, 320*4, 0);
+                    clientImage.CopyPixels(new Int32Rect(0, 0, 320, 240), smallBackgroundImage, 320 * 4, 0);
                     s.Send(smallBackgroundImage);
                     backgroundSent = true;
                     Console.WriteLine("Background sent");
@@ -383,7 +384,7 @@ namespace Share
                 {
                     imageSendCounter++;
                 }
-                
+
             }
         }
 
@@ -438,7 +439,7 @@ namespace Share
                     canvas1.Children.Add(greeting);
                     isGreeting = true;
                 }
-                else if(!_sensor.playerRecognized)
+                else if (!_sensor.playerRecognized)
                 {
                     canvas1.Children.Clear();
                     isGreeting = false;
@@ -480,7 +481,7 @@ namespace Share
                     break;
             }
         }
-        
+
         private void DrawPixels(float x, float y)
         {
             Dispatcher.BeginInvoke((Action)delegate
@@ -490,7 +491,7 @@ namespace Share
 
                 Ellipse ellipse = new Ellipse
                 {
-                    Fill = new SolidColorBrush(Color.FromRgb(0,0,0)),
+                    Fill = new SolidColorBrush(Color.FromRgb(0, 0, 0)),
                     Width = 4,
                     Height = 4
                 };
