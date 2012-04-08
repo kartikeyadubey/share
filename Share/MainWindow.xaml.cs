@@ -30,6 +30,7 @@ namespace Share
         BackgroundWorker _worker;
         BackgroundWorker _serverThread;
         BackgroundWorker _clientThread;
+        BackgroundWorker _imageThread;
         #endregion
 
         #region Constants
@@ -51,7 +52,6 @@ namespace Share
         bool backgroundSent = false;
         WriteableBitmap clientImage;
         int imageSendCounter;
-        bool imageSent = false;
         #endregion
 
         #region Client Variables
@@ -78,6 +78,9 @@ namespace Share
         SensorData _sensor;
         TextBlock greeting;
         bool isGreeting = false;
+        DBManager dbManager;
+        ImageCollection collection;
+        Canvas c = new Canvas();
         #endregion
 
         public MainWindow()
@@ -87,6 +90,7 @@ namespace Share
             greeting = new TextBlock();
 
             _sensor = new SensorData();
+            //_sensor.updated += new SensorData.UpdatedEventHandler(_sensor_updated);
             _sensor.updated += new SensorData.UpdatedEventHandler(_sensor_updated);
             _sensor.imageUpdate += new SensorData.SendImageHandler(_sensor_imageUpdate);
 
@@ -102,13 +106,54 @@ namespace Share
             _clientThread = new BackgroundWorker();
             _clientThread.DoWork += new DoWorkEventHandler(_clientThread_DoWork);
 
+            _imageThread = new BackgroundWorker();
+            _imageThread.DoWork += new DoWorkEventHandler(_imageThread_DoWork);
+
             imageSendCounter = 1;
             serverImage = new WriteableBitmap(TRANSMIT_WIDTH, TRANSMIT_HEIGHT, DPI_X, DPI_Y, PixelFormats.Bgra32, null);
             ASCIIEncoding enc = new ASCIIEncoding();
             COMPLETE_MESSAGE = enc.GetBytes("rcomplete");
             HELLO_MESSAGE = enc.GetBytes("hello");
+
+            dbManager = new DBManager();
+            collection = new ImageCollection();
         }
 
+        void _sensor_updated(object sender, OpenNI.Point3D handPoint, string evtName)
+        {
+            if(evtName.Equals("steady"))
+            {
+                Console.WriteLine("Steady: " + handPoint.X + handPoint.Y);
+                collection.findImageAt(handPoint);
+            }
+            DrawPixels(handPoint.X + (IMAGE_WIDTH / 2), handPoint.Y + (IMAGE_HEIGHT / 2));
+        }
+
+        void _imageThread_DoWork(object sender, DoWorkEventArgs e)
+        {
+            collection.setImages(dbManager.getGalleryImages());
+            int imageCount = collection.getImageCount();
+            if (imageCount > 0)
+            {
+                Dispatcher.BeginInvoke((Action)delegate
+                {
+                    Image tb = new Image();
+                    ImageObject temp = collection.getImageAtIndex(imageCount - 1);
+                    //tb.Arrange(new Rect(temp.getX(), temp.getY(), 150, 150));
+                    tb.Source = collection.getAllImages().ElementAt(imageCount - 1).getImage();
+                    tb.Width = 100;
+                    tb.Height = 100;
+                    canvas2.Children.Remove(tb);
+                    Canvas.SetLeft(tb, (double)temp.getX());
+                    Canvas.SetTop(tb, (double)temp.getY());
+                    canvas2.Children.Add(tb);
+                });
+            }
+        }
+
+        /// <summary>
+        /// Thread responsible for reading data being sent by the server
+        /// </summary>
         void _clientThread_DoWork(object sender, DoWorkEventArgs e)
         {
             ASCIIEncoding encoder = new ASCIIEncoding();
@@ -170,6 +215,7 @@ namespace Share
                     {
                         //the client has disconnected from the server
                         Console.WriteLine("Player has disconnected from the server");
+                        return;
                     }
 
                     //If the background has not been received yet
@@ -213,7 +259,7 @@ namespace Share
                         bytesRead = 0;
                         while (bytesRead != imgSize)
                         {
-                            int tmpBytesRead = clientStream.Read(partialPlayerImage, 0, imgSize);
+                            int tmpBytesRead = clientStream.Read(partialPlayerImage, 0, imgSize - bytesRead);
                             Buffer.BlockCopy(partialPlayerImage, 0, playerImage, bytesRead, tmpBytesRead);
                             bytesRead += tmpBytesRead;
                         }
@@ -227,7 +273,10 @@ namespace Share
                 }
             }
         }
-
+        
+        /// <summary>
+        /// Function respobsible for drawing the player on the screen
+        /// </summary>
         void drawPlayer()
         {
             unsafe
@@ -277,6 +326,10 @@ namespace Share
             }
         }
 
+        /// <summary>
+        /// Function responsible for connecting to the client
+        /// and sending data across
+        /// </summary>
         void _sensor_imageUpdate(object sender, WriteableBitmap b, bool playerFound, int xStart, int xEnd, int yStart, int yEnd)
         {
             if (!clientConnected)
@@ -388,8 +441,6 @@ namespace Share
             }
         }
 
-
-
         void _serverThread_DoWork(object sender, DoWorkEventArgs e)
         {
             if (!clientConnected)
@@ -417,12 +468,6 @@ namespace Share
                     }
                 }
             }
-        }
-
-        void _sensor_updated(object sender, OpenNI.Point3D handPoint)
-        {
-            Console.WriteLine("Point Updated");
-            DrawPixels(handPoint.X + (IMAGE_WIDTH / 2), handPoint.Y + (IMAGE_HEIGHT / 2));
         }
 
         void Worker_DoWork(object sender, DoWorkEventArgs e)
@@ -461,25 +506,15 @@ namespace Share
             {
                 _clientThread.RunWorkerAsync();
             }
+            if (!_imageThread.IsBusy)
+            {
+                _imageThread.RunWorkerAsync();
+            }
         }
 
         void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _sensor.Dispose();
-        }
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            switch (e.Key)
-            {
-                case System.Windows.Input.Key.B:
-                    Console.WriteLine("B was pressed");
-                    s.Close();
-                    _sensor.drawBackground = !_sensor.drawBackground;
-                    break;
-                default: base.OnKeyDown(e);
-                    break;
-            }
         }
 
         private void DrawPixels(float x, float y)

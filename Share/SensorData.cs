@@ -80,7 +80,6 @@ namespace Share
         private NITE.SessionManager sessionManager;
         public bool playerRecognized = false;
 
-        private bool clientConnected = false;
         private int xStart = int.MaxValue;
         private int yStart = int.MaxValue;
         private int xEnd = int.MinValue;
@@ -90,7 +89,7 @@ namespace Share
 
 
         #region Events
-        public delegate void UpdatedEventHandler(object sender, Point3D handPoint);
+        public delegate void UpdatedEventHandler(object sender, Point3D handPoint, String evtName);
         public event UpdatedEventHandler updated;
 
         public delegate void SendImageHandler(object sender, WriteableBitmap b, bool playerFound, int xS, int xE, int yS, int yE);
@@ -339,7 +338,7 @@ namespace Share
 
         public bool drawBackground = true;
         private NITE.FlowRouter flowRouter;
-        private MyBox boxes;
+        private ImageTracker images;
         #endregion
         #endregion
         #region Constructor
@@ -365,12 +364,14 @@ namespace Share
             //New flow router
             this.flowRouter = new NITE.FlowRouter();
 
-            this.boxes = new MyBox("Box1");
-            this.boxes.Leave += new MyBox.LeaveHandler(boxes_Leave);
-            this.boxes.Update += new MyBox.UpdateHandler(boxes_Update);
+            this.images = new ImageTracker("temp image");
+            this.images.Leave += new ImageTracker.LeaveHandler(image_Leave);
+            this.images.Update += new ImageTracker.UpdateHandler(images_Update);
+            //this.images.Update += new ImageTracker.UpdateHandler(image_Update);
             this.sessionManager.AddListener(this.flowRouter);
             this.sessionManager.SessionStart += new EventHandler<NITE.PositionEventArgs>(sessionManager_SessionStart);
             Console.WriteLine("Initialized Sensor Data");
+
 
             this.DepthGenerator.AlternativeViewpointCapability.SetViewpoint(this.ImageGenerator);
             this.userGenerator = new UserGenerator(this.Context);
@@ -388,12 +389,12 @@ namespace Share
             this.userGenerator.StartGenerating();
         }
 
-        void boxes_Update(Point3D p)
+        void images_Update(Point3D p, string str)
         {
-            updated(this, p);
+            updated(this, p, str);
         }
 
-        void boxes_Leave()
+        void image_Leave()
         {
             Console.WriteLine("Left box");
         }
@@ -401,7 +402,7 @@ namespace Share
         void sessionManager_SessionStart(object sender, NITE.PositionEventArgs e)
         {
             Console.WriteLine("Session started");
-            this.flowRouter.ActiveListener = this.boxes;
+            this.flowRouter.ActiveListener = this.images;
         }
 
         #endregion
