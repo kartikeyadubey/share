@@ -1,5 +1,6 @@
 C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\Share.exe
 C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\Share.pdb
+C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\mysql.data.dll
 C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\OpenNI.Net.dll
 C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\bin\Debug\XnVNITE.net.dll
 C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\obj\x86\Debug\ResolveAssemblyReference.cache

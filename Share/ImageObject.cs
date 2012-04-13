@@ -15,13 +15,17 @@ namespace Share
         private int x;
         private int y;
         private bool selected;
+        private int id;
+        private int canvasId;
 
-        public ImageObject(BitmapImage img, int x, int y)
+        public ImageObject(BitmapImage img, int x, int y, int id)
         {
             this.img = img;
             this.x = x;
             this.y = y;
             this.selected = false;
+            this.id = id;
+            this.canvasId = -1;
         }
 
         public BitmapImage getImage()
@@ -39,6 +43,11 @@ namespace Share
             return this.y;
         }
 
+        public int getId()
+        {
+            return this.id;
+        }
+
         public Point getCoordinates()
         {
             return new Point(this.x, this.y);
@@ -47,15 +56,31 @@ namespace Share
         {
             this.x = x;
             this.y = y;
-            this.selected = false;
         }
 
         public void selectImage()
         {
-            if (!this.selected)
-            {
-                this.selected = true;
-            }
+            this.selected = true;
+        }
+
+        public void deselectImage()
+        {
+            this.selected = false;
+        }
+
+        public bool isSelected()
+        {
+            return this.selected;
+        }
+
+        public void setCanvasId(int cId)
+        {
+            this.canvasId = cId;
+        }
+
+        public int getCanvasId()
+        {
+            return this.canvasId;
         }
     }
 }

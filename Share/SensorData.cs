@@ -391,12 +391,12 @@ namespace Share
 
         void images_Update(Point3D p, string str)
         {
-            updated(this, p, str);
+            updated(this, DepthGenerator.ConvertRealWorldToProjective(p), str);
         }
 
         void image_Leave()
         {
-            Console.WriteLine("Left box");
+            Console.WriteLine("Push Detected");
         }
 
         void sessionManager_SessionStart(object sender, NITE.PositionEventArgs e)

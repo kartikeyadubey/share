@@ -52,9 +52,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mysql.data, Version=6.4.4.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\mysql.data.dll</HintPath>
+    <Reference Include="mysql.data">
+      <HintPath>..\..\..\..\..\Downloads\mysql-connector-net-6.4.4-noinstall\v4\mysql.data.dll</HintPath>
     </Reference>
     <Reference Include="OpenNI.Net, Version=1.5.2.23, Culture=neutral, PublicKeyToken=6b43d0c6cf74ee7f, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>

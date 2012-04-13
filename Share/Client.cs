@@ -114,8 +114,6 @@ namespace Share
             client = new TcpClient();
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), portReceive);
 
-            //Sleep for 5ms
-            System.Threading.Thread.Sleep(5000);
             client.Connect(serverEndPoint);
             clientStream = client.GetStream();
 

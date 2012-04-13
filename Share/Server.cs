@@ -32,6 +32,10 @@ namespace Share
             this.portSend = port;
         }
 
+        public void setStream(NetworkStream stream)
+        {
+            this.clientStream = stream;
+        }
         //Connect to the client
         public void connect()
         {

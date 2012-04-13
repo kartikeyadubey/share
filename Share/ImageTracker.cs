@@ -77,7 +77,8 @@ namespace Share
 
         void pushDetector_Push(object sender, VelocityAngleEventArgs e)
         {
-            Leave();
+            Update(this.currentPoint, "push");
+            //Leave();
         }
 
         #region Leave Event

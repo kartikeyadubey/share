@@ -78,11 +78,14 @@ namespace Share
         SensorData _sensor;
         TextBlock greeting;
         bool isGreeting = false;
-        DBManager dbManager;
         ImageCollection collection;
-        Canvas c = new Canvas();
+        int pushCount;
+        int imageSelectedIndex;
+        int imageSelectedId;
+        int canvasSelectedIndex;
         #endregion
 
+        #region Constructor
         public MainWindow()
         {
             InitializeComponent();
@@ -90,7 +93,6 @@ namespace Share
             greeting = new TextBlock();
 
             _sensor = new SensorData();
-            //_sensor.updated += new SensorData.UpdatedEventHandler(_sensor_updated);
             _sensor.updated += new SensorData.UpdatedEventHandler(_sensor_updated);
             _sensor.imageUpdate += new SensorData.SendImageHandler(_sensor_imageUpdate);
 
@@ -115,40 +117,94 @@ namespace Share
             COMPLETE_MESSAGE = enc.GetBytes("rcomplete");
             HELLO_MESSAGE = enc.GetBytes("hello");
 
-            dbManager = new DBManager();
+            pushCount = 0;
+            canvasSelectedIndex = -1;
+            imageSelectedIndex = -1;
+            imageSelectedId = -1;
+
             collection = new ImageCollection();
+            drawCanvas();
         }
+        #endregion
 
         void _sensor_updated(object sender, OpenNI.Point3D handPoint, string evtName)
         {
-            if(evtName.Equals("steady"))
+            if(evtName.Equals("push"))
             {
-                Console.WriteLine("Steady: " + handPoint.X + handPoint.Y);
-                collection.findImageAt(handPoint);
+                pushCount++;
+                if (pushCount == 1)
+                {
+                    checkAndSelectImage(handPoint);
+                }
+                if(pushCount == 2)
+                {
+                    deselectImageAndReset();
+                }
             }
-            DrawPixels(handPoint.X + (IMAGE_WIDTH / 2), handPoint.Y + (IMAGE_HEIGHT / 2));
+            else if (imageSelectedIndex > -1)
+            {
+                DrawPixels(handPoint.X, handPoint.Y);
+                collection.updateImageAtIndex(imageSelectedIndex, handPoint, imageSelectedId);
+            }
+        }
+
+        public void checkAndSelectImage(OpenNI.Point3D handPoint)
+        {
+            int imageIndex = collection.findImageAt(handPoint);
+            if (imageIndex > -1)
+            {
+                collection.selectImageAtIndex(imageIndex);
+                imageSelectedIndex = imageIndex;
+                imageSelectedId = collection.getIdImageAtIndex(imageSelectedIndex);
+            }
+        }
+
+        public void deselectImageAndReset()
+        {
+            pushCount = 0;
+            collection.deselectImageAtIndex(imageSelectedIndex);
+            imageSelectedId = -1;
+            imageSelectedIndex = -1;
+            canvasSelectedIndex = -1;
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                canvas1.Children.Clear();
+            });
         }
 
         void _imageThread_DoWork(object sender, DoWorkEventArgs e)
         {
-            collection.setImages(dbManager.getGalleryImages());
-            int imageCount = collection.getImageCount();
-            if (imageCount > 0)
+            if (imageSelectedIndex > -1 || collection.updateCollection())
             {
-                Dispatcher.BeginInvoke((Action)delegate
+                drawCanvas();
+            }
+        }
+
+        /// <summary>
+        /// Draw all children on the canvas
+        /// </summary>
+        private void drawCanvas()
+        {
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                canvas2.Children.Clear();
+                for (int i = 0; i < collection.getImageCount(); i++)
                 {
                     Image tb = new Image();
-                    ImageObject temp = collection.getImageAtIndex(imageCount - 1);
-                    //tb.Arrange(new Rect(temp.getX(), temp.getY(), 150, 150));
-                    tb.Source = collection.getAllImages().ElementAt(imageCount - 1).getImage();
+                    ImageObject imgObj = collection.getImageAtIndex(i);
+                    tb.Source = imgObj.getImage();
                     tb.Width = 100;
                     tb.Height = 100;
-                    canvas2.Children.Remove(tb);
-                    Canvas.SetLeft(tb, (double)temp.getX());
-                    Canvas.SetTop(tb, (double)temp.getY());
-                    canvas2.Children.Add(tb);
-                });
-            }
+                    if (imgObj.isSelected())
+                    {
+                        tb.Opacity = 0.7;
+                    }
+                    Canvas.SetLeft(tb, (double)imgObj.getX());
+                    Canvas.SetTop(tb, (double)imgObj.getY());
+                    canvasSelectedIndex = canvas2.Children.Add(tb);
+                    collection.setElementAtIndexCanvasIndex(i, canvasSelectedIndex);
+                }
+            });
         }
 
         /// <summary>
@@ -165,7 +221,6 @@ namespace Share
                 System.Threading.Thread.Sleep(3000);
                 client.Connect(serverEndPoint);
                 clientStream = client.GetStream();
-
                 clientStream.Write(HELLO_MESSAGE, 0, HELLO_MESSAGE.Length);
                 clientStream.Flush();
                 Console.WriteLine("Client said hello");
@@ -532,7 +587,7 @@ namespace Share
                 };
 
                 Canvas.SetLeft(ellipse, x);
-                Canvas.SetBottom(ellipse, y);
+                Canvas.SetTop(ellipse, y);
 
                 canvas1.Children.Add(ellipse);
             });
