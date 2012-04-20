@@ -17,8 +17,9 @@ namespace Share
         private bool selected;
         private int id;
         private int canvasId;
+        private String base64Image; 
 
-        public ImageObject(BitmapImage img, int x, int y, int id)
+        public ImageObject(BitmapImage img, String base64Image,int x, int y, int id)
         {
             this.img = img;
             this.x = x;
@@ -26,6 +27,7 @@ namespace Share
             this.selected = false;
             this.id = id;
             this.canvasId = -1;
+            this.base64Image = base64Image;
         }
 
         public BitmapImage getImage()
@@ -81,6 +83,11 @@ namespace Share
         public int getCanvasId()
         {
             return this.canvasId;
+        }
+
+        public string getBase64String()
+        {
+            return this.base64Image;
         }
     }
 }

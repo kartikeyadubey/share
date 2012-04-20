@@ -11,6 +11,7 @@
         <Canvas Height="468" HorizontalAlignment="Left" Margin="12,12,0,0" Name="canvas1" VerticalAlignment="Top" Width="640" Grid.ColumnSpan="2"></Canvas>
         <Image Height="240" HorizontalAlignment="Left" Margin="594,12,0,0" Name="image2" Stretch="Fill" VerticalAlignment="Top" Width="320" Grid.Column="1" />
         <Image Height="90" HorizontalAlignment="Left" Margin="12,498,0,0" Name="image3" Stretch="Fill" VerticalAlignment="Top" Width="90" Grid.ColumnSpan="2" />
-        <Canvas Height="480" HorizontalAlignment="Left" Margin="12,12,0,0" Name="canvas2" VerticalAlignment="Top" Width="640" Grid.ColumnSpan="2" />
+        <Canvas Height="480" HorizontalAlignment="Left" Margin="12,12,0,0" Name="canvas2" VerticalAlignment="Top" Width="640" Grid.ColumnSpan="2"></Canvas>
+        <Canvas Height="300" Name="canvas3" Width="640" Grid.ColumnSpan="2" Margin="12,12,1110,521" />
     </Grid>
 </Window>

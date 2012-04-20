@@ -86,7 +86,8 @@
     </ApplicationDefinition>
     <Compile Include="Client.cs" />
     <Compile Include="DBManager.cs" />
-    <Compile Include="ImageCollection.cs" />
+    <Compile Include="ActiveImageCollection.cs" />
+    <Compile Include="ImageGallery.cs" />
     <Compile Include="ImageObject.cs" />
     <Compile Include="ImageTracker.cs" />
     <Compile Include="HandData.cs" />

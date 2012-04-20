@@ -44,6 +44,7 @@ namespace Share
         private const int TRANSMIT_IMAGE_SIZE = 320 * 240 * 4;
         private const int TRANSMIT_WIDTH = 320;
         private const int TRANSMIT_HEIGHT = 240;
+        private const int TRASH_RIGHT = IMAGE_WIDTH - 100;
         #endregion
 
         #region Server Variables
@@ -78,11 +79,15 @@ namespace Share
         SensorData _sensor;
         TextBlock greeting;
         bool isGreeting = false;
-        ImageCollection collection;
+        ActiveImageCollection collection;
+        ImageGallery gallery;
         int pushCount;
         int imageSelectedIndex;
         int imageSelectedId;
-        int canvasSelectedIndex;
+        Image leftButton;
+        Image rightButton;
+        Image galleryButton;
+        Image trashButton;
         #endregion
 
         #region Constructor
@@ -118,34 +123,179 @@ namespace Share
             HELLO_MESSAGE = enc.GetBytes("hello");
 
             pushCount = 0;
-            canvasSelectedIndex = -1;
             imageSelectedIndex = -1;
             imageSelectedId = -1;
 
-            collection = new ImageCollection();
-            drawCanvas();
+            collection = new ActiveImageCollection();
+            initializeButtonImages();
+            drawActiveImages();
+            gallery = new ImageGallery();
         }
         #endregion
+
+        private void initializeButtonImages()
+        {
+            leftButton = new Image();
+            leftButton.BeginInit();
+            BitmapImage bmp = new BitmapImage(new Uri(@"C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\left.png", UriKind.Absolute));
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            leftButton.Source = bmp;
+            leftButton.EndInit();
+            leftButton.Height = 100;
+            leftButton.Width = 100;
+
+            galleryButton = new Image();
+            galleryButton.BeginInit();
+            bmp = new BitmapImage(new Uri(@"C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\gallery.jpg", UriKind.Absolute));
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            galleryButton.Source = bmp;
+            galleryButton.EndInit();
+            galleryButton.Height = 100;
+            galleryButton.Width = 100;
+
+            rightButton = new Image();
+            rightButton.BeginInit();
+            bmp = new BitmapImage(new Uri(@"C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\right.png", UriKind.Absolute));
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            rightButton.Source = bmp;
+            rightButton.EndInit();
+            rightButton.Height = 100;
+            rightButton.Width = 100;
+
+            trashButton = new Image();
+            trashButton.BeginInit();
+            bmp = new BitmapImage(new Uri(@"C:\Users\Kartikeya\Documents\Visual Studio 2010\Projects\Share\Share\trash.png", UriKind.Absolute));
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            trashButton.Source = bmp;
+            trashButton.EndInit();
+            trashButton.Height = 100;
+            trashButton.Width = 100;
+        }
 
         void _sensor_updated(object sender, OpenNI.Point3D handPoint, string evtName)
         {
             if(evtName.Equals("push"))
             {
                 pushCount++;
-                if (pushCount == 1)
+
+                if (gallery.isSelected)
                 {
-                    checkAndSelectImage(handPoint);
+                    int galleryVal = gallery.findImageAt(handPoint);
+                    if (galleryVal == ImageGallery.MOVE_LEFT || galleryVal == ImageGallery.MOVE_RIGHT)
+                    {
+                        drawGallery();
+                    }
+                    else if(galleryVal >= 0)
+                    {
+                        collection.addImage(gallery.getImageAtIndex(galleryVal));
+                    }
                 }
-                if(pushCount == 2)
+                else
                 {
-                    deselectImageAndReset();
+                    if (pushCount == 1)
+                    {
+                        //TODO: Need to ensure user cannot drop image
+                        //on top of gallery button
+                        checkAndDisplayGallery(handPoint);
+                        checkAndSelectImage(handPoint);
+                    }
+                    if(pushCount == 2)
+                    {
+                        deselectImageAndReset(handPoint);
+                    }
                 }
+            }
+            else if (evtName.Contains("circle") && gallery.isSelected)
+            {
+                clearGalleryCanvas();
+                gallery.isSelected = false;
+                pushCount = 0;
+                drawActiveImages();
             }
             else if (imageSelectedIndex > -1)
             {
                 DrawPixels(handPoint.X, handPoint.Y);
                 collection.updateImageAtIndex(imageSelectedIndex, handPoint, imageSelectedId);
             }
+        }
+
+        private void clearGalleryCanvas()
+        {
+            Dispatcher.BeginInvoke((Action) delegate
+            {
+                canvas3.Children.Clear();
+                canvas3.Background = null;
+                canvas2.Opacity = 1;
+            });
+        }
+
+        public void checkAndDisplayGallery(OpenNI.Point3D handPoint)
+        {
+            if(pointsOverlap(handPoint, new Point(0,0)))
+            {
+                drawGallery();
+                gallery.isSelected = true;
+            }
+        }
+
+        public void drawGallery()
+        {
+            List<ImageObject> galleryItems = gallery.getImagesToDraw();
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                canvas2.Opacity = 0;
+                canvas3.Children.Clear();
+                canvas3.Background = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                canvas3.Background.Opacity = 0.5;
+                int x = 0;
+                int y = 200;
+
+
+                Canvas.SetLeft(leftButton, ImageGallery.LEFT_X);
+                Canvas.SetTop(leftButton, ImageGallery.LEFT_Y);
+                canvas3.Children.Add(leftButton);
+
+                for (int i = 0; i < galleryItems.Count(); i++)
+                {
+                    Image tb = new Image();
+                    ImageObject imgObj = galleryItems.ElementAt(i);
+                    tb.Source = imgObj.getImage();
+                    tb.Width = 100;
+                    tb.Height = 100;
+
+                    Canvas.SetLeft(tb, x);
+                    Canvas.SetTop(tb, y);
+                    canvas3.Children.Add(tb);
+
+                    gallery.setCoordinatesAtIndex(i, x, y);
+                    x += 125;
+                }
+
+                Canvas.SetLeft(rightButton, ImageGallery.RIGHT_X);
+                Canvas.SetTop(rightButton, ImageGallery.RIGHT_Y);
+                canvas3.Children.Add(rightButton);
+            });
+        }
+
+        /// <summary>
+        /// Check if two points lie
+        /// within 100 pixels of each other
+        /// return true if they do else
+        /// return false
+        /// </summary>
+        public bool pointsOverlap(OpenNI.Point3D pointOne, Point pointTwo)
+        {
+            bool retVal = false;
+
+            double a = (double)(pointTwo.X - pointOne.X);
+            double b = (double)(pointTwo.Y - pointOne.Y);
+
+            if (Math.Sqrt(a * a + b * b) < 100)
+            {
+                retVal = true;
+            }
+
+            return retVal;
         }
 
         public void checkAndSelectImage(OpenNI.Point3D handPoint)
@@ -159,13 +309,19 @@ namespace Share
             }
         }
 
-        public void deselectImageAndReset()
+        public void deselectImageAndReset(OpenNI.Point3D handPoint)
         {
+            if (pointsOverlap(handPoint, new Point(TRASH_RIGHT, 25)))
+            {
+                collection.removeImageAtIndex(imageSelectedIndex, imageSelectedId);
+            }
+            else
+            {
+                collection.deselectImageAtIndex(imageSelectedIndex);
+            }
             pushCount = 0;
-            collection.deselectImageAtIndex(imageSelectedIndex);
             imageSelectedId = -1;
             imageSelectedIndex = -1;
-            canvasSelectedIndex = -1;
             Dispatcher.BeginInvoke((Action)delegate
             {
                 canvas1.Children.Clear();
@@ -176,18 +332,25 @@ namespace Share
         {
             if (imageSelectedIndex > -1 || collection.updateCollection())
             {
-                drawCanvas();
+                drawActiveImages();
             }
         }
 
         /// <summary>
         /// Draw all children on the canvas
         /// </summary>
-        private void drawCanvas()
+        private void drawActiveImages()
         {
             Dispatcher.BeginInvoke((Action)delegate
             {
                 canvas2.Children.Clear();
+                Canvas.SetLeft(galleryButton, 0);
+                Canvas.SetTop(galleryButton, 25);
+                canvas2.Children.Add(galleryButton);
+
+                Canvas.SetLeft(trashButton, TRASH_RIGHT);
+                Canvas.SetTop(trashButton, 25);
+                canvas2.Children.Add(trashButton);
                 for (int i = 0; i < collection.getImageCount(); i++)
                 {
                     Image tb = new Image();
@@ -201,8 +364,7 @@ namespace Share
                     }
                     Canvas.SetLeft(tb, (double)imgObj.getX());
                     Canvas.SetTop(tb, (double)imgObj.getY());
-                    canvasSelectedIndex = canvas2.Children.Add(tb);
-                    collection.setElementAtIndexCanvasIndex(i, canvasSelectedIndex);
+                    canvas2.Children.Add(tb);
                 }
             });
         }

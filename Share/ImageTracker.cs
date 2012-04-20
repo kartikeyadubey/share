@@ -16,23 +16,42 @@ namespace Share
             Console.WriteLine("MyImage created");
             this.name = name;
             pushDetector = new PushDetector();
-            swipeDetector = new SwipeDetector();
+            circleDetector = new CircleDetector();
+            circleDetector.MinimumPoints = 50;
             steadyDetector = new SteadyDetector();
+            
             flowRouter = new FlowRouter();
             broadcaster = new Broadcaster();
 
             broadcaster.AddListener(pushDetector);
+            broadcaster.AddListener(circleDetector);
             broadcaster.AddListener(flowRouter);
 
             pushDetector.Push += new EventHandler<VelocityAngleEventArgs>(pushDetector_Push);
             steadyDetector.Steady += new EventHandler<SteadyEventArgs>(steadyDetector_Steady);
-            swipeDetector.GeneralSwipe += new EventHandler<DirectionVelocityAngleEventArgs>(swipeDetector_GeneralSwipe);
+            circleDetector.OnCircle += new EventHandler<CircleEventArgs>(circleDetector_OnCircle);
 
             PrimaryPointCreate += new EventHandler<HandFocusEventArgs>(MyBox_PrimaryPointCreate);
             PrimaryPointDestroy += new EventHandler<IdEventArgs>(MyBox_PrimaryPointDestroy);
             PrimaryPointUpdate += new EventHandler<HandEventArgs>(MyBox_PrimaryPointUpdate);
             OnUpdate += new EventHandler<UpdateMessageEventArgs>(MyBox_OnUpdate);
         }
+
+        void circleDetector_OnCircle(object sender, CircleEventArgs e)
+        {
+            if (e.Confidence)
+            {
+                Update(new Point3D(), "circle");
+                flowRouter.ActiveListener = pushDetector;
+            }
+        }
+
+        void swipeDetector_GeneralSwipe(object sender, DirectionVelocityAngleEventArgs e)
+        {
+            Update(new Point3D(), "swipe" + e.Direction);
+        }
+
+
 
         void MyBox_PrimaryPointUpdate(object sender, HandEventArgs e)
         {
@@ -50,41 +69,24 @@ namespace Share
         void MyBox_PrimaryPointDestroy(object sender, IdEventArgs e)
         {
             Console.WriteLine("Point destroyed");
-            //this.box.BackColor = Color.LightBlue;
         }
 
         void MyBox_PrimaryPointCreate(object sender, HandFocusEventArgs e)
         {
             Console.WriteLine("PrimaryPointCreate");
-            flowRouter.ActiveListener = steadyDetector;
+            flowRouter.ActiveListener = pushDetector;
         }
 
-        void swipeDetector_GeneralSwipe(object sender, DirectionVelocityAngleEventArgs e)
-        {
-            Console.WriteLine("{0}: Swipe {1}", this.name, e.Direction);
-            flowRouter.ActiveListener = steadyDetector;
-        }
 
         void steadyDetector_Steady(object sender, SteadyEventArgs e)
         {
-            //Console.WriteLine("Steady {0} ({1})", e.ID, PrimaryID);
             Update(this.currentPoint, "steady");
-            //if (e.ID == PrimaryID)
-            //{
-            //    flowRouter.ActiveListener = swipeDetector;
-            //}
         }
 
         void pushDetector_Push(object sender, VelocityAngleEventArgs e)
         {
             Update(this.currentPoint, "push");
-            //Leave();
         }
-
-        #region Leave Event
-        public delegate void LeaveHandler();
-        public event LeaveHandler Leave;
-        #endregion
 
         #region Update Event
         public delegate void UpdateHandler(Point3D p, String str);
@@ -92,7 +94,7 @@ namespace Share
         #endregion
 
         private PushDetector pushDetector;
-        private SwipeDetector swipeDetector;
+        private CircleDetector circleDetector;
         private SteadyDetector steadyDetector;
         private FlowRouter flowRouter;
         private Broadcaster broadcaster;

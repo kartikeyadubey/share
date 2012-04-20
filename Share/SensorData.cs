@@ -364,8 +364,7 @@ namespace Share
             //New flow router
             this.flowRouter = new NITE.FlowRouter();
 
-            this.images = new ImageTracker("temp image");
-            this.images.Leave += new ImageTracker.LeaveHandler(image_Leave);
+            this.images = new ImageTracker("ImageTracker");
             this.images.Update += new ImageTracker.UpdateHandler(images_Update);
             //this.images.Update += new ImageTracker.UpdateHandler(image_Update);
             this.sessionManager.AddListener(this.flowRouter);
