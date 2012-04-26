@@ -26,13 +26,18 @@ namespace Share
             dbManager = new DBManager();
             startIndex = 0;
             images = new List<ImageObject>(dbManager.getGalleryImages());
-            latestId = getIdImageAtIndex(this.images.Count() - 1);
+            latestId = getIdOfImageAtIndex(this.images.Count() - 1);
             isSelected = false;
         }
 
         public ImageObject getImageAtIndex(int index)
         {
-            return this.images.ElementAt(index);
+            if (index >= 0 && index < this.images.Count)
+            {
+                return this.images.ElementAt(index);
+            }
+
+            return null;
         }
 
         public List<ImageObject> getImagesToDraw()
@@ -61,13 +66,13 @@ namespace Share
 
         public void updateLatestId()
         {
-            latestId = getIdImageAtIndex(this.images.Count() - 1);
+            latestId = getIdOfImageAtIndex(this.images.Count() - 1);
         }
 
         /// <summary>
         /// Return the Id of the image @index
         /// </summary>
-        public int getIdImageAtIndex(int index)
+        public int getIdOfImageAtIndex(int index)
         {
             int retVal = -1;
 

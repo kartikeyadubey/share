@@ -16,8 +16,10 @@ namespace Share
         private int y;
         private bool selected;
         private int id;
-        private int canvasId;
-        private String base64Image; 
+        private String base64Image;
+        private String text;
+        private bool isText;
+
 
         public ImageObject(BitmapImage img, String base64Image,int x, int y, int id)
         {
@@ -26,9 +28,22 @@ namespace Share
             this.y = y;
             this.selected = false;
             this.id = id;
-            this.canvasId = -1;
             this.base64Image = base64Image;
+            this.isText = false;
+            this.text = null;
         }
+
+        public ImageObject(String text, int x, int y, int id)
+        {
+            this.text = text;
+            this.x = x;
+            this.y = y;
+            this.id = id;
+            this.isText = true;
+            this.img = null;
+            this.base64Image = null;
+        }
+
 
         public BitmapImage getImage()
         {
@@ -54,6 +69,11 @@ namespace Share
         {
             return new Point(this.x, this.y);
         }
+
+        public String getText()
+        {
+            return this.text;
+        }
         public void moveImage(int x, int y)
         {
             this.x = x;
@@ -75,19 +95,15 @@ namespace Share
             return this.selected;
         }
 
-        public void setCanvasId(int cId)
-        {
-            this.canvasId = cId;
-        }
-
-        public int getCanvasId()
-        {
-            return this.canvasId;
-        }
-
         public string getBase64String()
         {
             return this.base64Image;
         }
+
+        public bool isObjectText()
+        {
+            return this.isText;
+        }
+
     }
 }

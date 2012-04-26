@@ -84,13 +84,16 @@ namespace Share
         public int findImageAt(OpenNI.Point3D p)
         {
             int retVal = -1;
-            
+            double minDistSoFar = Double.MaxValue;
+            double currDist = 0;
+
             for (int i = 0; i < this.images.Count; i++)
             {
-                if (pointsOverlap(p, this.images.ElementAt(i).getCoordinates()))
+                currDist = pointsOverlap(p, this.images.ElementAt(i).getCoordinates());
+                if (currDist < minDistSoFar)
                 {
+                    minDistSoFar = currDist;
                     retVal = i;
-                    return retVal;
                 }
             }
             return retVal;
@@ -103,16 +106,17 @@ namespace Share
         /// return true if they do else
         /// return false
         /// </summary>
-        public bool pointsOverlap(OpenNI.Point3D pointOne, Point pointTwo)
+        public double pointsOverlap(OpenNI.Point3D pointOne, Point pointTwo)
         {
-            bool retVal = false;
+            double retVal = Double.MaxValue;
 
             double a = (double)(pointTwo.X - pointOne.X);
             double b = (double)(pointTwo.Y - pointOne.Y);
 
-            if (Math.Sqrt(a * a + b * b) < 100)
+            double dist = Math.Sqrt(a * a + b * b);
+            if (dist < 50)
             {
-                retVal = true;
+                retVal = dist;
             }
 
             return retVal;
@@ -151,17 +155,6 @@ namespace Share
         {
             dbManager.updateImageCoordinatesWithId(imageSelectedId, handPoint);
             this.images.ElementAt(imageSelectedIndex).moveImage((int)handPoint.X, (int)handPoint.Y);    
-        }
-
-        /// <summary>
-        /// Set the canvasId of the element at @param index
-        /// </summary>
-        public void setElementAtIndexCanvasIndex(int index, int canvasId)
-        {
-            if (index > -1 && canvasId > -1)
-            {
-                this.images.ElementAt(index).setCanvasId(canvasId);
-            }
         }
 
         public void updateLatestId()

@@ -28,7 +28,6 @@ namespace Share
     {
         #region Threads
         BackgroundWorker _worker;
-        BackgroundWorker _serverThread;
         BackgroundWorker _clientThread;
         BackgroundWorker _imageThread;
         #endregion
@@ -106,9 +105,6 @@ namespace Share
 
             _worker = new BackgroundWorker();
             _worker.DoWork += new DoWorkEventHandler(Worker_DoWork);
-
-            _serverThread = new BackgroundWorker();
-            _serverThread.DoWork += new DoWorkEventHandler(_serverThread_DoWork);
 
             _clientThread = new BackgroundWorker();
             _clientThread.DoWork += new DoWorkEventHandler(_clientThread_DoWork);
@@ -215,6 +211,7 @@ namespace Share
             else if (imageSelectedIndex > -1)
             {
                 DrawPixels(handPoint.X, handPoint.Y);
+                Console.WriteLine("Hand point: %f,%f", handPoint.X, handPoint.Y);
                 collection.updateImageAtIndex(imageSelectedIndex, handPoint, imageSelectedId);
             }
         }
@@ -223,15 +220,15 @@ namespace Share
         {
             Dispatcher.BeginInvoke((Action) delegate
             {
-                canvas3.Children.Clear();
-                canvas3.Background = null;
-                canvas2.Opacity = 1;
+                galleryCanvas.Children.Clear();
+                galleryCanvas.Background = null;
+                activeCanvas.Opacity = 1;
             });
         }
 
         public void checkAndDisplayGallery(OpenNI.Point3D handPoint)
         {
-            if(pointsOverlap(handPoint, new Point(0,0)))
+            if(pointsOverlap(handPoint, new Point(200,50)))
             {
                 drawGallery();
                 gallery.isSelected = true;
@@ -243,17 +240,17 @@ namespace Share
             List<ImageObject> galleryItems = gallery.getImagesToDraw();
             Dispatcher.BeginInvoke((Action)delegate
             {
-                canvas2.Opacity = 0;
-                canvas3.Children.Clear();
-                canvas3.Background = new SolidColorBrush(Color.FromRgb(0, 0, 0));
-                canvas3.Background.Opacity = 0.5;
+                activeCanvas.Opacity = 0;
+                galleryCanvas.Children.Clear();
+                galleryCanvas.Background = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                galleryCanvas.Background.Opacity = 0.5;
                 int x = 0;
                 int y = 200;
 
 
                 Canvas.SetLeft(leftButton, ImageGallery.LEFT_X);
                 Canvas.SetTop(leftButton, ImageGallery.LEFT_Y);
-                canvas3.Children.Add(leftButton);
+                galleryCanvas.Children.Add(leftButton);
 
                 for (int i = 0; i < galleryItems.Count(); i++)
                 {
@@ -265,7 +262,7 @@ namespace Share
 
                     Canvas.SetLeft(tb, x);
                     Canvas.SetTop(tb, y);
-                    canvas3.Children.Add(tb);
+                    galleryCanvas.Children.Add(tb);
 
                     gallery.setCoordinatesAtIndex(i, x, y);
                     x += 125;
@@ -273,7 +270,7 @@ namespace Share
 
                 Canvas.SetLeft(rightButton, ImageGallery.RIGHT_X);
                 Canvas.SetTop(rightButton, ImageGallery.RIGHT_Y);
-                canvas3.Children.Add(rightButton);
+                galleryCanvas.Children.Add(rightButton);
             });
         }
 
@@ -343,28 +340,40 @@ namespace Share
         {
             Dispatcher.BeginInvoke((Action)delegate
             {
-                canvas2.Children.Clear();
-                Canvas.SetLeft(galleryButton, 0);
-                Canvas.SetTop(galleryButton, 25);
-                canvas2.Children.Add(galleryButton);
+                activeCanvas.Children.Clear();
+                Canvas.SetLeft(galleryButton, 200);
+                Canvas.SetTop(galleryButton, 50);
+                activeCanvas.Children.Add(galleryButton);
 
                 Canvas.SetLeft(trashButton, TRASH_RIGHT);
                 Canvas.SetTop(trashButton, 25);
-                canvas2.Children.Add(trashButton);
+                activeCanvas.Children.Add(trashButton);
                 for (int i = 0; i < collection.getImageCount(); i++)
                 {
-                    Image tb = new Image();
-                    ImageObject imgObj = collection.getImageAtIndex(i);
-                    tb.Source = imgObj.getImage();
-                    tb.Width = 100;
-                    tb.Height = 100;
-                    if (imgObj.isSelected())
+                    ImageObject obj = collection.getImageAtIndex(i);
+                    if (obj.isObjectText())
                     {
-                        tb.Opacity = 0.7;
+                        TextBlock text = new TextBlock();
+                        text.Text = obj.getText();
+                        text.FontSize = 28;
+                        Canvas.SetLeft(text, (double)obj.getX());
+                        Canvas.SetTop(text, (double)obj.getY());
+                        activeCanvas.Children.Add(text);
                     }
-                    Canvas.SetLeft(tb, (double)imgObj.getX());
-                    Canvas.SetTop(tb, (double)imgObj.getY());
-                    canvas2.Children.Add(tb);
+                    else
+                    {
+                        Image img = new Image();
+                        img.Source = obj.getImage();
+                        img.Width = 100;
+                        img.Height = 100;
+                        if (obj.isSelected())
+                        {
+                            img.Opacity = 0.7;
+                        }
+                        Canvas.SetLeft(img, (double)obj.getX());
+                        Canvas.SetTop(img, (double)obj.getY());
+                        activeCanvas.Children.Add(img);
+                    }
                 }
             });
         }
@@ -658,8 +667,10 @@ namespace Share
             }
         }
 
-        void _serverThread_DoWork(object sender, DoWorkEventArgs e)
+
+        void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
+
             if (!clientConnected)
             {
                 IPAddress ipAddress = IPAddress.Any;
@@ -685,10 +696,7 @@ namespace Share
                     }
                 }
             }
-        }
 
-        void Worker_DoWork(object sender, DoWorkEventArgs e)
-        {
             Dispatcher.BeginInvoke((Action)delegate
             {
                 image1.Source = _sensor.RawImageSource;
@@ -715,10 +723,6 @@ namespace Share
             {
                 _worker.RunWorkerAsync();
             }
-            if (!_serverThread.IsBusy)
-            {
-                _serverThread.RunWorkerAsync();
-            }
             if (!_clientThread.IsBusy)
             {
                 _clientThread.RunWorkerAsync();
@@ -739,8 +743,6 @@ namespace Share
             Dispatcher.BeginInvoke((Action)delegate
             {
                 // We'll use random colors!
-
-
                 Ellipse ellipse = new Ellipse
                 {
                     Fill = new SolidColorBrush(Color.FromRgb(0, 0, 0)),
